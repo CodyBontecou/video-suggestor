@@ -5,6 +5,7 @@ on:
     branches: [main]
   repository_dispatch:
     types: [vault-updated]
+  workflow_dispatch:
 
 jobs:
   sync-and-deploy:
