@@ -77,7 +77,7 @@ const tmp = `/tmp/vidlog-sync-${Date.now()}.sql`;
 fs.writeFileSync(tmp, sqls.join('\n\n'));
 
 try {
-  execSync(`wrangler d1 execute "${DB}" ${REMOTE} --file="${tmp}"`, {
+  execSync(`npx wrangler d1 execute "${DB}" ${REMOTE} --file="${tmp}"`, {
     stdio: 'inherit',
     cwd: path.resolve(__dirname, '..'),
   });
