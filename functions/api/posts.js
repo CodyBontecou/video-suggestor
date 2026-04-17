@@ -26,7 +26,7 @@ export async function onRequestGet(context) {
 
   const { results } = await env.DB.prepare(`
     SELECT
-      p.id, p.title, p.content, p.tags, p.status, p.made, p.created_at, p.updated_at,
+      p.id, p.title, p.content, p.tags, p.status, p.made, p.video_url, p.created_at, p.updated_at,
       p.user_id,
       COUNT(v.post_id) AS vote_count,
       MAX(CASE WHEN v.user_id = ? THEN 1 ELSE 0 END) AS user_voted,

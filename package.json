@@ -14,6 +14,8 @@
     "db:add-status:remote": "wrangler d1 execute video-suggestor-db --remote --command=\"ALTER TABLE posts ADD COLUMN status TEXT NOT NULL DEFAULT 'published'\"",
     "db:add-made": "wrangler d1 execute video-suggestor-db --local --command=\"ALTER TABLE posts ADD COLUMN made INTEGER NOT NULL DEFAULT 0\"",
     "db:add-made:remote": "wrangler d1 execute video-suggestor-db --remote --command=\"ALTER TABLE posts ADD COLUMN made INTEGER NOT NULL DEFAULT 0\"",
+    "db:add-video-url": "wrangler d1 execute video-suggestor-db --local --command=\"ALTER TABLE posts ADD COLUMN video_url TEXT\"",
+    "db:add-video-url:remote": "wrangler d1 execute video-suggestor-db --remote --command=\"ALTER TABLE posts ADD COLUMN video_url TEXT\"",
     "kv:create": "wrangler kv namespace create SESSIONS",
     "sync": "node scripts/sync.js",
     "sync:remote": "node scripts/sync.js --remote"

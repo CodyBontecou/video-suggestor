@@ -114,7 +114,7 @@ html, html * {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 max(20px, calc((100% - 900px) / 2));
 }
 
 .logo {
@@ -229,7 +229,7 @@ html, html * {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 20px;
+  padding: 0 max(20px, calc((100% - 900px) / 2));
 }
 
 .toolbar-left {
@@ -640,6 +640,48 @@ html, html * {
   border: none;
   border-top: 1px solid var(--border);
   margin: 16px 0;
+}
+
+.video-embed {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  margin: 0 0 16px;
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.video-embed iframe,
+.video-embed video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  border: none;
+}
+
+.video-link {
+  margin: 0 0 16px;
+}
+
+.video-link a {
+  display: inline-block;
+  padding: 8px 14px;
+  border: 1px solid var(--accent);
+  color: var(--accent);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  border-radius: 2px;
+  transition: background 0.2s var(--ease), color 0.2s var(--ease);
+}
+
+.video-link a:hover {
+  background: var(--accent);
+  color: #fff;
 }
 
 /* ── Expand indicator ── */

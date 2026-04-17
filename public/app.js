@@ -38,6 +38,44 @@ function md(content) {
   return `<pre style="white-space:pre-wrap">${esc(content)}</pre>`;
 }
 
+function youtubeId(url) {
+  try {
+    const u = new URL(url);
+    if (u.hostname === 'youtu.be') return u.pathname.slice(1) || null;
+    if (/(^|\.)youtube\.com$/.test(u.hostname)) {
+      if (u.pathname === '/watch') return u.searchParams.get('v');
+      const m = u.pathname.match(/^\/(embed|shorts|v)\/([^/?#]+)/);
+      if (m) return m[2];
+    }
+  } catch {}
+  return null;
+}
+
+function expandedHTML(post) {
+  const video = post.made && post.video_url ? videoEmbedHTML(post.video_url) : '';
+  const body = post.content ? md(post.content) : '';
+  return `${video}${body}`;
+}
+
+function videoEmbedHTML(url) {
+  if (!url) return '';
+  const yt = youtubeId(url);
+  if (yt) {
+    return `<div class="video-embed"><iframe
+      src="https://www.youtube.com/embed/${esc(yt)}"
+      title="Video"
+      loading="lazy"
+      allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+      allowfullscreen
+      referrerpolicy="strict-origin-when-cross-origin"
+    ></iframe></div>`;
+  }
+  if (/\.(mp4|webm|ogg|mov)(\?.*)?$/i.test(url)) {
+    return `<div class="video-embed"><video controls preload="metadata" src="${esc(url)}"></video></div>`;
+  }
+  return `<div class="video-link"><a href="${esc(url)}" target="_blank" rel="noopener noreferrer">▶ WATCH VIDEO</a></div>`;
+}
+
 let toastTimer;
 function toast(msg) {
   const el = document.getElementById('toast');
@@ -194,8 +232,8 @@ function toggleExpand(id) {
 
     const post = state.posts.find(p => p.id === id);
     const inner = content.querySelector('.post-content-inner');
-    if (inner && post?.content && !inner.dataset.rendered) {
-      inner.innerHTML = md(post.content);
+    if (inner && post && !inner.dataset.rendered) {
+      inner.innerHTML = expandedHTML(post);
       inner.dataset.rendered = '1';
     }
 
@@ -333,7 +371,7 @@ function postHTML(post, index) {
           : ''}
         <div class="post-content" style="max-height:${state.expanded.has(post.id) ? '9999px' : '0'}">
           <div class="post-content-inner"${state.expanded.has(post.id) ? ' data-rendered="1"' : ''}>${
-            state.expanded.has(post.id) && post.content ? md(post.content) : ''
+            state.expanded.has(post.id) ? expandedHTML(post) : ''
           }</div>
         </div>
       </div>
