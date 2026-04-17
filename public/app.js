@@ -1,5 +1,7 @@
 /* IDEA·LOG — frontend */
 
+const OWNER_EMAILS = ['bontecouc@gmail.com', 'codybontecou@gmail.com', 'cody@isolated.tech'];
+
 const state = {
   posts: [],
   user: null,
@@ -7,6 +9,10 @@ const state = {
   expanded: new Set(),
   loading: true,
 };
+
+function isOwner() {
+  return state.user?.email && OWNER_EMAILS.includes(state.user.email);
+}
 
 // ── Utilities ──
 
@@ -79,6 +85,7 @@ async function loadUser() {
 
 function renderAuth() {
   const el = document.getElementById('auth-area');
+  const submitBtn = document.getElementById('submit-btn');
   if (!el) return;
   if (state.user) {
     el.innerHTML = `
@@ -89,8 +96,10 @@ function renderAuth() {
         <span class="user-name">${esc(state.user.username || state.user.name || 'User')}</span>
         <button class="logout-btn" onclick="handleLogout()">SIGN OUT</button>
       </div>`;
+    if (submitBtn) submitBtn.style.display = '';
   } else {
     el.innerHTML = `<button class="login-btn" onclick="showAuthModal()">SIGN IN</button>`;
+    if (submitBtn) submitBtn.style.display = 'none';
   }
 }
 
@@ -110,6 +119,17 @@ function closeAuthModal(e) {
   if (!e || e.target.id === 'auth-modal' || e.currentTarget.id === 'modal-close') {
     document.getElementById('auth-modal').style.display = 'none';
   }
+}
+
+function showCreateModal() {
+  if (!state.user) { showAuthModal(); return; }
+  document.getElementById('create-modal').style.display = 'flex';
+  document.getElementById('create-title').focus();
+}
+
+function closeCreateModal() {
+  document.getElementById('create-modal').style.display = 'none';
+  document.getElementById('create-form').reset();
 }
 
 // ── Posts ──
@@ -205,6 +225,21 @@ async function toggleVote(postId, event) {
   }
 }
 
+// ── Approve ──
+
+async function approvePost(postId) {
+  try {
+    const res = await fetch(`/api/posts/${postId}/approve`, { method: 'POST' });
+    if (!res.ok) throw new Error('Failed');
+    const post = state.posts.find(p => p.id === postId);
+    if (post) post.status = 'published';
+    renderFeed();
+    toast('IDEA APPROVED');
+  } catch {
+    toast('ERR: APPROVE FAILED');
+  }
+}
+
 // ── Render ──
 
 function postHTML(post, index) {
@@ -235,7 +270,16 @@ function postHTML(post, index) {
         ${tags ? `<div class="post-tags">${tags}</div>` : ''}
         <div class="post-meta">
           <span class="post-date">${fmtDate(post.created_at)}</span>
+          ${post.author_username || post.author_name
+            ? `<span class="post-author">∙ ${esc(post.author_username || post.author_name)}</span>`
+            : ''}
+          ${post.status === 'draft' ? `<span class="post-draft">PENDING</span>` : ''}
         </div>
+        ${post.status === 'draft' && isOwner()
+          ? `<div class="post-approve-bar" onclick="event.stopPropagation()">
+               <button class="approve-btn" onclick="approvePost('${esc(post.id)}')">APPROVE</button>
+             </div>`
+          : ''}
         <div class="post-content" style="max-height:${state.expanded.has(post.id) ? '9999px' : '0'}">
           <div class="post-content-inner"${state.expanded.has(post.id) ? ' data-rendered="1"' : ''}>${
             state.expanded.has(post.id) && post.content ? md(post.content) : ''
@@ -270,6 +314,45 @@ document.addEventListener('DOMContentLoaded', async () => {
   document.getElementById('theme-toggle')?.addEventListener('click', toggleTheme);
   document.getElementById('modal-close')?.addEventListener('click', () => closeAuthModal({ currentTarget: { id: 'modal-close' } }));
   document.getElementById('auth-modal')?.addEventListener('click', closeAuthModal);
+
+  document.getElementById('create-modal-close')?.addEventListener('click', closeCreateModal);
+  document.getElementById('create-modal')?.addEventListener('click', e => {
+    if (e.target.id === 'create-modal') closeCreateModal();
+  });
+
+  document.getElementById('create-form')?.addEventListener('submit', async e => {
+    e.preventDefault();
+    const submitBtn = document.getElementById('create-submit');
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'SUBMITTING…';
+
+    try {
+      const title = document.getElementById('create-title').value.trim();
+      const content = document.getElementById('create-content').value.trim();
+      const tagsRaw = document.getElementById('create-tags').value;
+      const tags = tagsRaw.split(',').map(t => t.trim()).filter(Boolean);
+
+      const res = await fetch('/api/posts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title, content, tags }),
+      });
+
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to submit');
+      }
+
+      closeCreateModal();
+      await loadPosts();
+      toast('IDEA SUBMITTED');
+    } catch (err) {
+      toast(`ERR: ${err.message.toUpperCase()}`);
+    } finally {
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'SUBMIT';
+    }
+  });
 
   document.querySelectorAll('.sort-btn').forEach(btn => {
     btn.addEventListener('click', () => setSort(btn.dataset.sort));

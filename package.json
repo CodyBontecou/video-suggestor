@@ -8,6 +8,10 @@
     "db:create": "wrangler d1 create video-suggestor-db",
     "db:migrate": "wrangler d1 execute video-suggestor-db --local --file=schema.sql",
     "db:migrate:remote": "wrangler d1 execute video-suggestor-db --remote --file=schema.sql",
+    "db:add-user-id": "wrangler d1 execute video-suggestor-db --local --command=\"ALTER TABLE posts ADD COLUMN user_id TEXT REFERENCES users(id) ON DELETE SET NULL\"",
+    "db:add-user-id:remote": "wrangler d1 execute video-suggestor-db --remote --command=\"ALTER TABLE posts ADD COLUMN user_id TEXT REFERENCES users(id) ON DELETE SET NULL\"",
+    "db:add-status": "wrangler d1 execute video-suggestor-db --local --command=\"ALTER TABLE posts ADD COLUMN status TEXT NOT NULL DEFAULT 'published'\"",
+    "db:add-status:remote": "wrangler d1 execute video-suggestor-db --remote --command=\"ALTER TABLE posts ADD COLUMN status TEXT NOT NULL DEFAULT 'published'\"",
     "kv:create": "wrangler kv namespace create SESSIONS",
     "sync": "node scripts/sync.js",
     "sync:remote": "node scripts/sync.js --remote"

@@ -61,6 +61,7 @@ export async function onRequestGet(context) {
       username: user.username,
       name: user.name,
       avatar_url: user.avatar_url,
+      email: user.email,
     });
 
     return new Response(null, {
