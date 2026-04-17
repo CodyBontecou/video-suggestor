@@ -6,6 +6,7 @@ const state = {
   posts: [],
   user: null,
   sort: 'votes',
+  filter: 'all',
   expanded: new Set(),
   loading: true,
 };
@@ -138,7 +139,10 @@ async function loadPosts() {
   state.loading = true;
   renderFeed();
   try {
-    state.posts = await fetch(`/api/posts?sort=${state.sort}`).then(r => r.json());
+    const params = new URLSearchParams({ sort: state.sort });
+    if (state.filter === 'made') params.set('made', 'true');
+    if (state.filter === 'todo') params.set('made', 'false');
+    state.posts = await fetch(`/api/posts?${params}`).then(r => r.json());
   } catch {
     state.posts = [];
     toast('ERR: COULD NOT FETCH POSTS');
@@ -153,6 +157,16 @@ function setSort(sort) {
   state.sort = sort;
   document.querySelectorAll('.sort-btn').forEach(btn => {
     btn.classList.toggle('active', btn.dataset.sort === sort);
+  });
+  state.expanded.clear();
+  loadPosts();
+}
+
+function setFilter(filter) {
+  if (filter === state.filter) return;
+  state.filter = filter;
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.filter === filter);
   });
   state.expanded.clear();
   loadPosts();
@@ -225,6 +239,35 @@ async function toggleVote(postId, event) {
   }
 }
 
+// ── Made toggle ──
+
+async function toggleMade(postId, event) {
+  event.stopPropagation();
+  const post = state.posts.find(p => p.id === postId);
+  if (!post) return;
+  const target = !post.made;
+
+  try {
+    const res = await fetch(`/api/posts/${postId}/made`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ made: target }),
+    });
+    if (!res.ok) throw new Error('Failed');
+    const { made } = await res.json();
+    post.made = made;
+
+    if ((state.filter === 'made' && !made) || (state.filter === 'todo' && made)) {
+      state.posts = state.posts.filter(p => p.id !== postId);
+      renderPostCount();
+    }
+    renderFeed();
+    toast(made ? 'MARKED MADE' : 'MARKED TODO');
+  } catch {
+    toast('ERR: UPDATE FAILED');
+  }
+}
+
 // ── Approve ──
 
 async function approvePost(postId) {
@@ -249,7 +292,7 @@ function postHTML(post, index) {
 
   return `
     <article
-      class="post${state.expanded.has(post.id) ? ' expanded' : ''}"
+      class="post${state.expanded.has(post.id) ? ' expanded' : ''}${post.made ? ' made' : ''}"
       data-id="${esc(post.id)}"
       style="animation-delay:${delay}ms"
       onclick="toggleExpand('${esc(post.id)}')"
@@ -274,6 +317,16 @@ function postHTML(post, index) {
             ? `<span class="post-author">∙ ${esc(post.author_username || post.author_name)}</span>`
             : ''}
           ${post.status === 'draft' ? `<span class="post-draft">PENDING</span>` : ''}
+          ${isOwner()
+            ? `<button
+                 class="made-toggle${post.made ? ' is-made' : ''}"
+                 onclick="toggleMade('${esc(post.id)}', event)"
+                 title="${post.made ? 'Mark as not made' : 'Mark as made'}"
+                 aria-pressed="${post.made}"
+               >${post.made ? '✓ MADE' : '○ TODO'}</button>`
+            : post.made
+              ? `<span class="post-made">✓ MADE</span>`
+              : ''}
         </div>
         ${post.status === 'draft' && isOwner()
           ? `<div class="post-approve-bar" onclick="event.stopPropagation()">
@@ -356,6 +409,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   document.querySelectorAll('.sort-btn').forEach(btn => {
     btn.addEventListener('click', () => setSort(btn.dataset.sort));
+  });
+
+  document.querySelectorAll('.filter-btn').forEach(btn => {
+    btn.addEventListener('click', () => setFilter(btn.dataset.filter));
   });
 
   const urlParams = new URLSearchParams(window.location.search);

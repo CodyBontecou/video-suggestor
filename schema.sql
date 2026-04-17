@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS posts (
   tags TEXT DEFAULT '[]',
   user_id TEXT REFERENCES users(id) ON DELETE SET NULL,
   status TEXT NOT NULL DEFAULT 'published',
+  made INTEGER NOT NULL DEFAULT 0,
   created_at INTEGER NOT NULL,
   updated_at INTEGER NOT NULL
 );

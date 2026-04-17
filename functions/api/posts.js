@@ -5,6 +5,7 @@ export async function onRequestGet(context) {
   const { request, env } = context;
   const url = new URL(request.url);
   const sort = url.searchParams.get('sort') || 'votes';
+  const madeParam = url.searchParams.get('made');
 
   const session = await getSession(context);
   const userId = session?.userId ?? null;
@@ -17,11 +18,16 @@ export async function onRequestGet(context) {
     default:       orderBy = 'vote_count DESC, p.created_at DESC';
   }
 
-  const statusFilter = owner ? '' : "WHERE p.status = 'published'";
+  const filters = [];
+  if (!owner) filters.push("p.status = 'published'");
+  if (madeParam === 'true')  filters.push('p.made = 1');
+  if (madeParam === 'false') filters.push('p.made = 0');
+  const whereClause = filters.length ? `WHERE ${filters.join(' AND ')}` : '';
 
   const { results } = await env.DB.prepare(`
     SELECT
-      p.id, p.title, p.content, p.tags, p.status, p.created_at, p.updated_at,
+      p.id, p.title, p.content, p.tags, p.status, p.made, p.created_at, p.updated_at,
+      p.user_id,
       COUNT(v.post_id) AS vote_count,
       MAX(CASE WHEN v.user_id = ? THEN 1 ELSE 0 END) AS user_voted,
       u.username AS author_username,
@@ -29,7 +35,7 @@ export async function onRequestGet(context) {
     FROM posts p
     LEFT JOIN votes v ON v.post_id = p.id
     LEFT JOIN users u ON u.id = p.user_id
-    ${statusFilter}
+    ${whereClause}
     GROUP BY p.id
     ORDER BY ${orderBy}
   `).bind(userId).all();
@@ -38,6 +44,7 @@ export async function onRequestGet(context) {
     ...p,
     tags: JSON.parse(p.tags || '[]'),
     user_voted: Boolean(p.user_voted),
+    made: Boolean(p.made),
   }));
 
   return Response.json(posts, {
@@ -86,6 +93,7 @@ export async function onRequestPost(context) {
     content,
     tags,
     status,
+    made: false,
     user_id: session.userId,
     author_username: session.username || null,
     author_name: session.name || null,

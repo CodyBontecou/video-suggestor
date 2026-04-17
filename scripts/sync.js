@@ -78,15 +78,17 @@ for (const file of files) {
   const id      = fm.id;
   const title   = fm.title || file.replace(/\.md$/, '');
   const tags    = JSON.stringify(Array.isArray(fm.tags) ? fm.tags : []);
+  const made    = /^(true|1|yes)$/i.test(String(fm.made ?? '')) ? 1 : 0;
   const stat    = fs.statSync(fullPath);
   const created = fm.date ? new Date(fm.date).getTime() : Math.floor(stat.birthtimeMs);
   const now     = Date.now();
 
   activeIds.push(id);
 
+  // `made` is set on initial insert only — UI toggles in D1 win over later syncs.
   sqls.push(
-    `INSERT INTO posts (id, title, content, tags, created_at, updated_at) ` +
-    `VALUES ('${esc(id)}','${esc(title)}','${esc(body)}','${esc(tags)}',${created},${now}) ` +
+    `INSERT INTO posts (id, title, content, tags, made, created_at, updated_at) ` +
+    `VALUES ('${esc(id)}','${esc(title)}','${esc(body)}','${esc(tags)}',${made},${created},${now}) ` +
     `ON CONFLICT(id) DO UPDATE SET ` +
     `title=excluded.title, content=excluded.content, ` +
     `tags=excluded.tags, updated_at=excluded.updated_at;`
