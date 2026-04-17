@@ -1,0 +1,41 @@
+name: Sync & Deploy
+
+on:
+  push:
+    branches: [main]
+  repository_dispatch:
+    types: [vault-updated]
+
+jobs:
+  sync-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout website
+        uses: actions/checkout@v4
+
+      - name: Checkout vault
+        uses: actions/checkout@v4
+        with:
+          repository: CodyBontecou/videos
+          path: vault
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Sync vault to D1
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          VAULT_PATH: ${{ github.workspace }}/vault
+        run: node scripts/sync.js --remote
+
+      - name: Deploy to Cloudflare Pages
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: e4265f322e6380ee832b83ad45e3e8c0
+        run: npx wrangler pages deploy ./public --project-name video-suggestor
