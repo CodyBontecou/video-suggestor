@@ -286,7 +286,6 @@ async function approvePost(postId) {
 // ── Render ──
 
 function postHTML(post, index) {
-  const num  = String(index + 1).padStart(3, '0');
   const tags = (post.tags || []).map(t => `<span class="tag">#${esc(t)}</span>`).join('');
   const delay = Math.min(index * 28, 400);
 
@@ -297,7 +296,6 @@ function postHTML(post, index) {
       style="animation-delay:${delay}ms"
       onclick="toggleExpand('${esc(post.id)}')"
     >
-      <div class="post-num">${num}</div>
       <div class="post-vote">
         <button
           class="vote-btn${post.user_voted ? ' voted' : ''}"

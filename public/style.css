@@ -351,7 +351,7 @@ html, html * {
 /* ── Post ── */
 .post {
   display: grid;
-  grid-template-columns: 48px 68px 1fr;
+  grid-template-columns: 68px 1fr;
   border-bottom: 1px solid var(--border-dim);
   cursor: pointer;
   animation: post-in 0.25s var(--ease) both;
@@ -361,26 +361,9 @@ html, html * {
   background: var(--accent-dim);
 }
 
-.post:hover .post-num { color: var(--text-dim); }
-
 @keyframes post-in {
   from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: translateY(0); }
-}
-
-/* ── Post number ── */
-.post-num {
-  display: flex;
-  align-items: flex-start;
-  justify-content: center;
-  padding-top: 18px;
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  color: var(--text-dim);
-  border-right: 1px solid var(--border-dim);
-  font-weight: 400;
-  user-select: none;
-  transition: color 0.15s;
 }
 
 /* ── Vote column ── */
@@ -898,11 +881,11 @@ html, html * {
   .header   { padding: 0 14px; }
   .toolbar  { padding: 0 14px; }
 
-  .post { grid-template-columns: 40px 64px 1fr; }
-
-  .post-num { font-size: 12px; padding-top: 16px; }
+  .post { grid-template-columns: 64px 1fr; }
 
   .post-body { padding: 14px 16px; }
+
+  .post-count { display: none; }
 
   .post-title { font-size: 16px; }
 
@@ -911,8 +894,6 @@ html, html * {
   .user-name { display: none; }
 
   .sort-btn { padding: 0 10px; font-size: 12px; }
-
-  .post-count { font-size: 12px; }
 
   .submit-btn { font-size: 12px; padding: 0 10px; }
 
