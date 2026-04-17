@@ -47,6 +47,16 @@ function writeFrontmatter(fm, body) {
 
 function esc(s) { return String(s == null ? '' : s).replace(/'/g, "''"); }
 
+function titleFromFilename(name) {
+  return name
+    .replace(/[-_]+/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim()
+    .split(' ')
+    .map(w => (w && w === w.toLowerCase() ? w[0].toUpperCase() + w.slice(1) : w))
+    .join(' ');
+}
+
 if (!fs.existsSync(VAULT)) {
   console.error(`Vault not found: ${VAULT}`);
   process.exit(1);
@@ -76,7 +86,7 @@ for (const file of files) {
   }
 
   const id        = fm.id;
-  const title     = fm.title || file.replace(/\.md$/, '');
+  const title     = fm.title || titleFromFilename(file.replace(/\.md$/, ''));
   const tags      = JSON.stringify(Array.isArray(fm.tags) ? fm.tags : []);
   const made      = /^(true|1|yes)$/i.test(String(fm.made ?? '')) ? 1 : 0;
   const videoUrl  = (fm.video_url ?? '').toString().trim();
