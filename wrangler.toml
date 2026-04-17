@@ -1,0 +1,13 @@
+name = "video-suggestor"
+compatibility_date = "2024-12-01"
+pages_build_output_dir = "public"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "video-suggestor-db"
+database_id = "375aefb6-0a4f-4e90-a41a-d3e1f9968ea7"
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "8a4c4a13cadb4a8bad43010b93a4070c"
+preview_id = "642311af3a634e4baac3b62dcaa9e7bf"

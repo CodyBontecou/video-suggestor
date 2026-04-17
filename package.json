@@ -1,0 +1,18 @@
+{
+  "name": "video-suggestor",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "wrangler pages dev ./public --compatibility-date=2024-12-01",
+    "deploy": "wrangler pages deploy ./public",
+    "db:create": "wrangler d1 create video-suggestor-db",
+    "db:migrate": "wrangler d1 execute video-suggestor-db --local --file=schema.sql",
+    "db:migrate:remote": "wrangler d1 execute video-suggestor-db --remote --file=schema.sql",
+    "kv:create": "wrangler kv namespace create SESSIONS",
+    "sync": "node scripts/sync.js",
+    "sync:remote": "node scripts/sync.js --remote"
+  },
+  "devDependencies": {
+    "wrangler": "^3.0.0"
+  }
+}
