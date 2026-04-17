@@ -1,8 +1,11 @@
 #!/usr/bin/env node
-// Sync Obsidian vault markdown files → Cloudflare D1
+// Sync Obsidian vault → Cloudflare D1
+// Each file gets a stable UUID in frontmatter on first sync.
+// Stale D1 rows (files removed from vault) are deleted.
 
-const fs   = require('fs');
-const path = require('path');
+const fs     = require('fs');
+const path   = require('path');
+const crypto = require('crypto');
 const { execSync } = require('child_process');
 
 const VAULT  = process.env.VAULT_PATH || path.resolve(__dirname, '../../../dev/videos');
@@ -12,7 +15,7 @@ const SKIP   = new Set(['Welcome.md']);
 
 function parseFrontmatter(raw) {
   const m = raw.match(/^---\r?\n([\s\S]*?)\r?\n---\r?\n?([\s\S]*)$/);
-  if (!m) return { fm: {}, body: raw.trim() };
+  if (!m) return { fm: {}, body: raw.trim(), hasFm: false };
 
   const fm = {};
   for (const line of m[1].split('\n')) {
@@ -26,14 +29,23 @@ function parseFrontmatter(raw) {
       fm[key] = val.replace(/^['"]|['"]$/g, '');
     }
   }
-  return { fm, body: m[2].trim() };
+  return { fm, body: m[2].trim(), hasFm: true };
 }
 
-function slugify(s) {
-  return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+function writeFrontmatter(fm, body) {
+  const lines = ['---'];
+  for (const [k, v] of Object.entries(fm)) {
+    if (Array.isArray(v)) {
+      lines.push(`${k}: [${v.join(', ')}]`);
+    } else {
+      lines.push(`${k}: ${v}`);
+    }
+  }
+  lines.push('---', '', body);
+  return lines.join('\n');
 }
 
-function esc(s) { return s.replace(/'/g, "''"); }
+function esc(s) { return String(s == null ? '' : s).replace(/'/g, "''"); }
 
 if (!fs.existsSync(VAULT)) {
   console.error(`Vault not found: ${VAULT}`);
@@ -49,29 +61,41 @@ if (!files.length) {
 
 console.log(`Syncing ${files.length} file(s) from ${VAULT}...`);
 
-const sqls = files.map(file => {
+const activeIds = [];
+const sqls = [];
+
+for (const file of files) {
   const fullPath = path.join(VAULT, file);
   const raw = fs.readFileSync(fullPath, 'utf-8');
   const { fm, body } = parseFrontmatter(raw);
 
-  let title = fm.title || '';
-  if (!title) {
-    const h1 = body.match(/^#\s+(.+)$/m);
-    title = h1 ? h1[1] : file.replace(/\.md$/, '');
+  if (!fm.id) {
+    fm.id = crypto.randomUUID();
+    fs.writeFileSync(fullPath, writeFrontmatter(fm, body));
+    console.log(`  + Generated ID for "${file}": ${fm.id}`);
   }
 
-  const id       = slugify(title);
-  const tags     = JSON.stringify(fm.tags || []);
-  const stat     = fs.statSync(fullPath);
-  const created  = fm.date ? new Date(fm.date).getTime() : Math.floor(stat.birthtimeMs);
-  const now      = Date.now();
+  const id      = fm.id;
+  const title   = fm.title || file.replace(/\.md$/, '');
+  const tags    = JSON.stringify(Array.isArray(fm.tags) ? fm.tags : []);
+  const stat    = fs.statSync(fullPath);
+  const created = fm.date ? new Date(fm.date).getTime() : Math.floor(stat.birthtimeMs);
+  const now     = Date.now();
 
-  return `INSERT INTO posts (id, title, content, tags, created_at, updated_at)
-VALUES ('${esc(id)}','${esc(title)}','${esc(body)}','${esc(tags)}',${created},${now})
-ON CONFLICT(id) DO UPDATE SET
-  title=excluded.title, content=excluded.content,
-  tags=excluded.tags, updated_at=excluded.updated_at;`;
-});
+  activeIds.push(id);
+
+  sqls.push(
+    `INSERT INTO posts (id, title, content, tags, created_at, updated_at) ` +
+    `VALUES ('${esc(id)}','${esc(title)}','${esc(body)}','${esc(tags)}',${created},${now}) ` +
+    `ON CONFLICT(id) DO UPDATE SET ` +
+    `title=excluded.title, content=excluded.content, ` +
+    `tags=excluded.tags, updated_at=excluded.updated_at;`
+  );
+}
+
+// Remove D1 rows for files that no longer exist in the vault
+const idList = activeIds.map(id => `'${esc(id)}'`).join(',');
+sqls.push(`DELETE FROM posts WHERE id NOT IN (${idList});`);
 
 const tmp = `/tmp/vidlog-sync-${Date.now()}.sql`;
 fs.writeFileSync(tmp, sqls.join('\n\n'));
@@ -81,7 +105,7 @@ try {
     stdio: 'inherit',
     cwd: path.resolve(__dirname, '..'),
   });
-  console.log(`Done. ${files.length} post(s) upserted.`);
+  console.log(`Done. ${files.length} post(s) synced, stale posts removed.`);
 } finally {
   fs.unlinkSync(tmp);
 }

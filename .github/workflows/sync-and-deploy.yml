@@ -19,6 +19,7 @@ jobs:
         with:
           repository: CodyBontecou/videos
           path: vault
+          token: ${{ secrets.WEBSITE_DISPATCH_TOKEN }}
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -34,6 +35,19 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           VAULT_PATH: ${{ github.workspace }}/vault
         run: node scripts/sync.js --remote
+
+      - name: Push vault frontmatter changes
+        working-directory: vault
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "No new IDs to commit"
+          else
+            git commit -m "chore: add frontmatter IDs [skip ci]"
+            git push https://x-access-token:${{ secrets.WEBSITE_DISPATCH_TOKEN }}@github.com/CodyBontecou/videos.git HEAD:main
+          fi
 
       - name: Deploy to Cloudflare Pages
         env:
