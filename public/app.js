@@ -98,6 +98,8 @@ function applyTheme(theme) {
   document.documentElement.setAttribute('data-theme', theme);
   const icon = document.querySelector('.theme-icon');
   if (icon) icon.textContent = theme === 'dark' ? '◑' : '◐';
+  const meta = document.getElementById('meta-theme-color');
+  if (meta) meta.setAttribute('content', theme === 'dark' ? '#1a1a1a' : '#edeae3');
 }
 
 function toggleTheme() {

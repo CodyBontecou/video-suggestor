@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="theme-color" content="#1a1a1a" id="meta-theme-color">
   <title>IDEA·LOG — Video Ideas</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -35,7 +36,7 @@
         <button class="filter-btn" data-filter="todo">TODO</button>
         <button class="filter-btn" data-filter="made">MADE</button>
       </div>
-      <button id="submit-btn" class="submit-btn" style="display:none" onclick="showCreateModal()">+ SUBMIT</button>
+      <button id="submit-btn" class="submit-btn" style="display:none" onclick="showCreateModal()"><span class="submit-plus">+</span><span class="submit-label">SUBMIT</span></button>
     </div>
     <span id="post-count" class="post-count" aria-live="polite">— IDEAS</span>
   </div>
